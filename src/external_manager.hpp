@@ -4,6 +4,9 @@
 #include <memory>
 #include <variant>
 
+/**
+ * @brief Store an element memory address and type
+ */
 struct DataSignature
 {
   const void *address;
@@ -196,16 +199,26 @@ class ExternalManager
 {
 public:
   template <typename El_t>
-  void removeCallback(const El_t &element)
+  void remove_callback(const El_t &element)
   {
     mCallbackDict.erase(element);
   }
 
-  template <typename El_t, typename Arg_t>
-  void registerCallback(const El_t &element, void (*fun)(Arg_t))
+  void remove_callback(const std::unordered_multimap<DataSignature, void *, hash_fn>::iterator &position)
   {
-    removeCallback(element);
-    mCallbackDict.insert({element, reinterpret_cast<void *>(fun)});
+    mCallbackDict.erase(position);
+  }
+
+  void remove_callback(const std::unordered_multimap<DataSignature, void *, hash_fn>::iterator &first,
+                       const std::unordered_multimap<DataSignature, void *, hash_fn>::iterator &last)
+  {
+    mCallbackDict.erase(first, last);
+  }
+
+  template <typename El_t, typename Arg_t>
+  std::unordered_multimap<DataSignature, void *, hash_fn>::iterator register_callback(const El_t &element, void (*fun)(Arg_t))
+  {
+    return mCallbackDict.insert({element, reinterpret_cast<void *>(fun)});
   }
 
   template <typename El_t>
@@ -219,7 +232,7 @@ public:
 
     mUndos.push(element);
 
-    callbackAttachedTo(element);
+    _callback(element);
   }
 
   bool undo()
@@ -234,7 +247,7 @@ public:
     mUndos.top().rollback();
     mUndos.pop();
 
-    callbackFromKey(data_sig);
+    _callback(data_sig);
 
     mDirection = Direction::Backwards;
     return true;
@@ -250,31 +263,31 @@ public:
     mRedos.top().rollback();
     mRedos.pop();
 
-    callbackFromKey(data_sig);
+    _callback(data_sig);
 
     mDirection = Direction::Forward;
     return true;
   }
 
 private:
-  void callbackFromKey(const DataSignature &ds)
+  void _callback(const DataSignature &ds)
   {
-    (tryCallbackWithType<Types>(ds), ...);
+    (_try_callback<Types>(ds), ...);
   }
 
   template <typename T>
-  void tryCallbackWithType(const DataSignature &ds)
+  void _try_callback(const DataSignature &ds)
   {
     if (typeid(T) == *ds.typeinfo)
-      callbackAttachedTo(*reinterpret_cast<const T *>(ds.address));
+      _callback(*reinterpret_cast<const T *>(ds.address));
   }
 
   template <typename El_t>
-  void callbackAttachedTo(const El_t &element)
+  void _callback(const El_t &element)
   {
-    auto f = mCallbackDict.find(element);
-    if (f != mCallbackDict.end())
-      (*reinterpret_cast<void (*)(El_t)>((*f).second))(element);
+    auto range = mCallbackDict.equal_range(element);
+    for (auto start = range.first; start != range.second; ++start)
+      (*reinterpret_cast<void (*)(El_t)>((*start).second))(element);
   }
 
   enum class Direction
@@ -303,12 +316,17 @@ void isSetS1A(int val)
   printf("s1.a was set to %d\n", val);
 }
 
+void meh(int val)
+{
+  printf("meh %d\n", val);
+}
+
 int main()
 {
   S s1, s2;
   ExternalManager<int, double> em;
 
-  em.registerCallback(s1.a, &isSetS1A);
+  auto cb_it = em.register_callback(s1.a, &isSetS1A);
 
   em.set(s1.a, 10);
 
@@ -321,12 +339,16 @@ int main()
   em.redo();
 
   em.set(s2.a, 20);
+
+  em.register_callback(s1.a, &meh);
   em.set(s1.a, 25);
 
-  em.removeCallback(s1.a);
+  em.remove_callback(cb_it);
 
   em.set(s1.a, 30);
 
+  em.remove_callback(s1.a);
+  em.set(s1.a, -2);
   puts("Now printing value of s1.a");
   isSetS1A(s1.a);
 
