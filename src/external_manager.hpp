@@ -198,23 +198,42 @@ template <typename... Types>
 class ExternalManager
 {
 public:
+  /**
+   * @brief Removes all callback associated with element
+   * @param element the element associated to the callbacks to be removed
+   */
   template <typename El_t>
   void remove_callback(const El_t &element)
   {
     mCallbackDict.erase(element);
   }
 
+  /**
+   * @brief Removes a callback
+   * @param position Callback iterator
+   */
   void remove_callback(const std::unordered_multimap<DataSignature, void *, hash_fn>::iterator &position)
   {
     mCallbackDict.erase(position);
   }
 
+  /**
+   * @brief Removes all calbacks in the specified range
+   * @param first start of the range of callbacks to be removed
+   * @param last end of the range of callbacks to be removed (excluded)
+   */
   void remove_callback(const std::unordered_multimap<DataSignature, void *, hash_fn>::iterator &first,
                        const std::unordered_multimap<DataSignature, void *, hash_fn>::iterator &last)
   {
     mCallbackDict.erase(first, last);
   }
 
+  /**
+   * @brief Adds a callback that will be called on every call of the set method
+   * @param element Element linked to the callback
+   * @param fun Function to be called
+   * @return Iterator to the registered callback
+   */
   template <typename El_t, typename Arg_t>
   std::unordered_multimap<DataSignature, void *, hash_fn>::iterator register_callback(const El_t &element, void (*fun)(Arg_t))
   {
