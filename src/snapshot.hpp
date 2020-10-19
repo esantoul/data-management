@@ -51,7 +51,7 @@ public:
             typename = std::enable_if_t<is_type_among_v<Val_t, Types...>>>
   constexpr bool operator==(const Val_t &val) const noexcept
   {
-    // Check whether data currently holds a std::unique_ptr to T
+    // Check whether data currently holds a std::unique_ptr to Val_t
     if (data.index() != get_type_index_v<Val_t, Types...>)
       return false;
     // Check whether address and val address are the same
