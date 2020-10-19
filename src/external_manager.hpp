@@ -316,10 +316,23 @@ public:
     _call_dependencies(element);
   }
 
+  template <typename El_t, typename... Args_t,
+            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
+  void call(El_t &element, void (El_t::*method)(Args_t...), const Args_t &... args)
+  {
+    (element.*method)(args...);
+    _callback(element);
+    _call_dependencies(element);
+  }
+
   template <typename El_t, typename Ret_t, typename... Args_t,
             typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
-  void call(El_t &element, Ret_t El_t::*method(Args_t...), Args_t &&... args)
+  Ret_t call(El_t &element, Ret_t (El_t::*method)(Args_t...), const Args_t &... args)
   {
+    Ret_t result = (element.*method)(args...);
+    _callback(element);
+    _call_dependencies(element);
+    return result;
   }
 
   /**
@@ -413,6 +426,7 @@ private:
 ////////////////////////////////////
 
 #include <cstdio>
+#include <cmath>
 
 struct S
 {
@@ -420,6 +434,14 @@ struct S
   int b = 0;
 
   constexpr int addition_result() const { return a + b; }
+  constexpr void vertical_symmetry() { a = -a; }
+  constexpr float norm() const { return sqrt(a * a + b * b); }
+  constexpr float enlarge(int length)
+  {
+    a += length;
+    b += length;
+    return norm();
+  }
 };
 
 void isSetS1A(int val)
@@ -474,5 +496,8 @@ int main()
 
   em.set(s1.b, 8);
 
-  return 0;
+  int arg = 5;
+  float val = em.call(s1, &S::enlarge, arg);
+
+  return val;
 }
