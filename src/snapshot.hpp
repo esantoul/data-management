@@ -6,9 +6,16 @@
 #include "data_signature.hpp"
 #include "custom_type_utilities.hpp"
 
+/**
+ * @brief Stores a variable DataSignature and a copy of its value at a point in time
+ * @tparam Types List of all the types that are allowed be stored in the element
+ */
 template <typename... Types>
 class Snapshot
 {
+private:
+  using v_t = std::variant<typename std::unique_ptr<Types>...>;
+
 public:
   template <typename El_t,
             typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
@@ -27,7 +34,14 @@ public:
   template <typename T>
   constexpr bool operator==(const T &val) const noexcept
   {
-    return EqualHelper<sizeof...(Types) - 1, Types...>::attempt(data, val);
+    // Check whether data currently holds a std::unique_ptr to T
+    if (data.index() != get_type_index_v<T, Types...>)
+      return false;
+    // Check whether address and val address are the same
+    if (static_cast<const void *>(&val) != address)
+      return false;
+    // Check whether data holds the same value as val
+    return ((std::is_same_v<T, Types> && EqualHelper<Types, T>::test(data, val)) || ...);
   }
 
   template <typename T>
@@ -38,7 +52,11 @@ public:
 
   constexpr void rollback() const noexcept
   {
-    RollbackHelper<sizeof...(Types) - 1, Types...>::attempt(address, data);
+    // using fold expression & binary operators short-circuiting
+    // the void is here to avoid having a unused variable warning
+    void(((data.index() == get_type_index_v<Types, Types...> &&
+           (bool)&(*reinterpret_cast<Types *>(address) = *std::get<typename std::unique_ptr<Types>>(data).get())) ||
+          ...));
   }
 
   constexpr DataSignature get_data_signature() const noexcept
@@ -47,28 +65,6 @@ public:
   }
 
 private:
-  template <size_t N, typename... Args>
-  struct RollbackHelper
-  {
-    static constexpr void attempt(void *a, const std::variant<typename std::unique_ptr<Args>...> &d) noexcept
-    {
-      if (d.index() == N)
-        *reinterpret_cast<nth_type_of_t<N, Args...> *>(a) = *std::get<N>(d).get();
-      else
-        RollbackHelper<N - 1, Args...>::attempt(a, d);
-    }
-  };
-
-  template <typename... Args>
-  struct RollbackHelper<0, Args...>
-  {
-    static constexpr void attempt(void *a, const std::variant<typename std::unique_ptr<Args>...> &d) noexcept
-    {
-      if (d.index() == 0)
-        *reinterpret_cast<nth_type_of_t<0, Args...> *>(a) = *std::get<0>(d).get();
-    }
-  };
-
   template <size_t N, typename... Args>
   struct CopyHelper
   {
@@ -115,31 +111,18 @@ private:
     }
   };
 
-  template <size_t N, typename T, typename... Args>
+  template <typename Data_t, typename Val_t>
   struct EqualHelper
   {
-    static constexpr bool attempt(const std::variant<typename std::unique_ptr<Args>...> &d, const T &val) noexcept
+    static constexpr bool test(const v_t &data, const Val_t &val) noexcept
     {
-      if (std::is_same_v<T, nth_type_of_t<N, Args...>>)
-        return val == *std::get<N>(d).get();
-      else
-        return EqualHelper<N - 1, Args...>::attempt(d, val);
-    }
-  };
-
-  template <typename T, typename... Args>
-  struct EqualHelper<0, T, Args...>
-  {
-    static constexpr bool attempt(const std::variant<typename std::unique_ptr<Args>...> &d, const T &val) noexcept
-    {
-      if (std::is_same_v<T, nth_type_of_t<0, Args...>>)
-        return val == *std::get<0>(d).get();
+      if constexpr (std::is_same_v<Data_t, Val_t>)
+        return val == *std::get<typename std::unique_ptr<Data_t>>(data).get();
       else
         return false;
     }
   };
 
   void *address;
-  using v_t = std::variant<typename std::unique_ptr<Types>...>;
   v_t data;
 };

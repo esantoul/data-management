@@ -19,6 +19,7 @@ struct nth_type_of<0, T0, Types...>
 {
   typedef T0 type;
 };
+
 template <int N, typename T0, typename... Types>
 struct nth_type_of<N, T0, Types...>
 {
@@ -27,3 +28,33 @@ struct nth_type_of<N, T0, Types...>
 
 template <int N, typename... Types>
 using nth_type_of_t = typename nth_type_of<N, Types...>::type;
+
+template <typename T, typename... Types>
+struct IndexLocator;
+
+template <typename T>
+struct IndexLocator<T>
+{
+  static constexpr std::size_t locate() { return 0; }
+};
+
+template <typename T, typename T0, typename... Types>
+struct IndexLocator<T, T0, Types...>
+{
+  static constexpr std::size_t locate()
+  {
+    if (std::is_same_v<T, T0>)
+      return 0;
+    else
+      return 1 + IndexLocator<T, Types...>::locate();
+  }
+};
+
+template <typename T, typename... Types>
+struct get_type_index
+{
+  static constexpr std::enable_if_t<is_type_among_v<T, Types...>, size_t> value = IndexLocator<T, Types...>::locate();
+};
+
+template <typename T, typename... Types>
+constexpr std::size_t get_type_index_v = get_type_index<T, Types...>::value;
