@@ -4,8 +4,6 @@
 #include <memory>
 #include <variant>
 
-#include <cstdio>
-
 template <typename T, typename... Types>
 struct is_type_among
 {
