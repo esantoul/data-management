@@ -28,24 +28,42 @@ public:
   constexpr Snapshot(const Snapshot &other) noexcept
       : address{other.address}
   {
-    CopyHelper<sizeof...(Types) - 1, Types...>::attempt(data, other.data);
+    void(((other.data.index() == get_type_index_v<Types, Types...> &&
+           (bool)&(data = std::make_unique<Types>(*std::get<typename std::unique_ptr<Types>>(other.data).get()))) ||
+          ...));
   }
 
-  template <typename T>
-  constexpr bool operator==(const T &val) const noexcept
+  constexpr bool operator==(const Snapshot &other) const noexcept
+  {
+    return other.address == address &&
+           other.data.index() == data.index() &&
+           ((data.index() == get_type_index_v<Types, Types...> &&
+             *std::get<typename std::unique_ptr<Types>>(other.data).get() == *std::get<typename std::unique_ptr<Types>>(data).get()) ||
+            ...);
+  }
+
+  constexpr bool operator!=(const Snapshot &other) const noexcept
+  {
+    return !(*this == other);
+  }
+
+  template <typename Val_t,
+            typename = std::enable_if_t<is_type_among_v<Val_t, Types...>>>
+  constexpr bool operator==(const Val_t &val) const noexcept
   {
     // Check whether data currently holds a std::unique_ptr to T
-    if (data.index() != get_type_index_v<T, Types...>)
+    if (data.index() != get_type_index_v<Val_t, Types...>)
       return false;
     // Check whether address and val address are the same
     if (static_cast<const void *>(&val) != address)
       return false;
     // Check whether data holds the same value as val
-    return ((std::is_same_v<T, Types> && EqualHelper<Types, T>::test(data, val)) || ...);
+    return ((std::is_same_v<Val_t, Types> && EqualHelper<Types, Val_t>::test(data, val)) || ...);
   }
 
-  template <typename T>
-  constexpr bool operator!=(const T &val) const noexcept
+  template <typename Val_t,
+            typename = std::enable_if_t<is_type_among_v<Val_t, Types...>>>
+  constexpr bool operator!=(const Val_t &val) const noexcept
   {
     return !(val == *this);
   }
@@ -65,28 +83,6 @@ public:
   }
 
 private:
-  template <size_t N, typename... Args>
-  struct CopyHelper
-  {
-    static constexpr void attempt(std::variant<typename std::unique_ptr<Args>...> &dest, const std::variant<typename std::unique_ptr<Args>...> &source) noexcept
-    {
-      if (source.index() == N)
-        dest = std::make_unique<nth_type_of_t<N, Args...>>(*std::get<N>(source).get());
-      else
-        CopyHelper<N - 1, Args...>::attempt(dest, source);
-    }
-  };
-
-  template <typename... Args>
-  struct CopyHelper<0, Args...>
-  {
-    static constexpr void attempt(std::variant<typename std::unique_ptr<Args>...> &dest, const std::variant<typename std::unique_ptr<Args>...> &source) noexcept
-    {
-      if (source.index() == 0)
-        dest = std::make_unique<nth_type_of_t<0, Args...>>(*std::get<0>(source).get());
-    }
-  };
-
   template <size_t N, typename... Args>
   struct DataSignatureHelper
   {
