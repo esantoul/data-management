@@ -51,74 +51,38 @@ public:
             typename = std::enable_if_t<is_type_among_v<Val_t, Types...>>>
   constexpr bool operator==(const Val_t &val) const noexcept
   {
-    // Check whether data currently holds a std::unique_ptr to Val_t
-    if (data.index() != get_type_index_v<Val_t, Types...>)
-      return false;
-    // Check whether address and val address are the same
-    if (static_cast<const void *>(&val) != address)
-      return false;
-    // Check whether data holds the same value as val
-    return ((std::is_same_v<Val_t, Types> && EqualHelper<Types, Val_t>::test(data, val)) || ...);
+    return data.index() == get_type_index_v<Val_t, Types...> &&           // Check that data currently holds a std::unique_ptr to Val_t
+           static_cast<const void *>(&val) == address &&                  // Check that address and val address are the same
+           *std::get<typename std::unique_ptr<Val_t>>(data).get() == val; // Check that data holds the same value as val
   }
 
   template <typename Val_t,
             typename = std::enable_if_t<is_type_among_v<Val_t, Types...>>>
   constexpr bool operator!=(const Val_t &val) const noexcept
   {
-    return !(val == *this);
+    return !(*this == val);
   }
 
   constexpr void rollback() const noexcept
   {
-    // using fold expression & binary operators short-circuiting
-    // the void is here to avoid having a unused variable warning
-    void(((data.index() == get_type_index_v<Types, Types...> &&
+    void(((data.index() == get_type_index_v<Types, Types...> && // void operator to avoid unused variable warning
            (bool)&(*reinterpret_cast<Types *>(address) = *std::get<typename std::unique_ptr<Types>>(data).get())) ||
-          ...));
+          ...)); // using fold expression & binary operators short-circuiting
   }
 
   constexpr DataSignature get_data_signature() const noexcept
   {
-    return DataSignatureHelper<sizeof...(Types) - 1, Types...>::attempt(address, data);
+    DataSignature ds{};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress"
+    void(((data.index() == get_type_index_v<Types, Types...> &&
+           (bool)&(ds = *reinterpret_cast<Types *>(address))) ||
+          ...));
+#pragma GCC diagnostic pop
+    return ds;
   }
 
 private:
-  template <size_t N, typename... Args>
-  struct DataSignatureHelper
-  {
-    static constexpr DataSignature attempt(const void *a, const std::variant<typename std::unique_ptr<Args>...> &d) noexcept
-    {
-      if (d.index() == N)
-        return *reinterpret_cast<const nth_type_of_t<N, Args...> *>(a);
-      else
-        return DataSignatureHelper<N - 1, Args...>::attempt(a, d);
-    }
-  };
-
-  template <typename... Args>
-  struct DataSignatureHelper<0, Args...>
-  {
-    static constexpr DataSignature attempt(const void *a, const std::variant<typename std::unique_ptr<Args>...> &d) noexcept
-    {
-      if (d.index() == 0)
-        return *reinterpret_cast<const nth_type_of_t<0, Args...> *>(a);
-      else
-        return {};
-    }
-  };
-
-  template <typename Data_t, typename Val_t>
-  struct EqualHelper
-  {
-    static constexpr bool test(const v_t &data, const Val_t &val) noexcept
-    {
-      if constexpr (std::is_same_v<Data_t, Val_t>)
-        return val == *std::get<typename std::unique_ptr<Data_t>>(data).get();
-      else
-        return false;
-    }
-  };
-
   void *address;
   v_t data;
 };

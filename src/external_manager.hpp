@@ -94,7 +94,7 @@ public:
   void set(El_t &element, const El_t &value)
   {
     mDirection = Direction::Forward;
-    if (!mUndos.size() || mUndos.top() != DataSignature{element})
+    if (!mUndos.size() || mUndos.top() != element)
       mUndos.push(element);
 
     element = value;
