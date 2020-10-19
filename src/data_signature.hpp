@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <functional>
 
 /**
@@ -28,10 +27,14 @@ struct DataSignature
   {
     return address == other.address && typeinfo == other.typeinfo;
   }
+};
 
-  // specialized hash function
-  struct hash_fn
+namespace std
+{
+  template <>
+  class hash<DataSignature>
   {
+  public:
     std::size_t operator()(const DataSignature &ds) const
     {
       std::size_t h1 = std::hash<const void *>()(ds.address);
@@ -40,4 +43,4 @@ struct DataSignature
       return h1 ^ h2;
     }
   };
-};
+} // namespace std

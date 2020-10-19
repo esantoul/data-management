@@ -9,15 +9,15 @@ template <typename... Types>
 class ExternalManager
 {
 private:
-  using callback_map_t = std::unordered_multimap<DataSignature, void *, DataSignature::hash_fn>;
-  using dependency_map_t = std::unordered_multimap<DataSignature, DataSignature, DataSignature::hash_fn>;
+  using callback_map_t = std::unordered_multimap<DataSignature, void *>;
+  using dependency_map_t = std::unordered_multimap<DataSignature, DataSignature>;
 
 public:
   using callback_iter_t = callback_map_t::iterator;
   using dependency_iter_t = dependency_map_t::iterator;
 
   /**
-   * @brief Adds a callback that will be called on every call of the set method
+   * @brief Registers a callback that will be called on every element change via ExternalManager 'set' or 'call' methods calls
    * @param element Element linked to the callback
    * @param fun Function to be called
    * @return Iterator to the registered callback
@@ -50,16 +50,11 @@ public:
   }
 
   /**
-   * @brief Removes all callbacks in the specified range
-   * @param first start of the range of callbacks to be removed
-   * @param last end of the range of callbacks to be removed (excluded)
+   * @brief Registers a dependency between two elements. Every child element change via 'set' or 'call' methods will trigger parent element callbacks.
+   * @param child Trigger element
+   * @param parent Element which callbacks will be triggered subsequently to child change
+   * @return Iterator to the registered dependency
    */
-  void remove_callback(const callback_iter_t &first,
-                       const callback_iter_t &last)
-  {
-    mCallbacks.erase(first, last);
-  }
-
   template <typename Child_t,
             typename Parent_t,
             typename = std::enable_if_t<is_type_among_v<Child_t, Types...>>,
@@ -70,7 +65,7 @@ public:
   }
 
   /**
-   * @brief Removes all dependencies associated with element
+   * @brief Removes all dependencies associated with an element
    * @param element Element associated to the dependencies to be removed
    */
   template <typename El_t,
@@ -82,28 +77,17 @@ public:
 
   /**
    * @brief Removes a dependency
-   * @param position Dependency iterator
+   * @param it Dependency iterator
    */
-  void remove_dependency(const dependency_iter_t &position)
+  void remove_dependency(const dependency_iter_t &it)
   {
-    mDependencies.erase(position);
+    mDependencies.erase(it);
   }
 
   /**
-   * @brief Removes all dependencies in the specified range
-   * @param first start of the range of dependencies to be removed
-   * @param last end of the range of dependencies to be removed (excluded)
-   */
-  void remove_dependency(const dependency_iter_t &first,
-                         const dependency_iter_t &last)
-  {
-    mDependencies.erase(first, last);
-  }
-
-  /**
-   * @brief Set a variable to a given value and calls callbacks and dependencies associated to this value
-   * @param element Reference to the element to be set
-   * @param value Value to set the element to
+   * @brief Set an element to a given value then calls callbacks & dependencies associated to this element
+   * @param element Element to be set
+   * @param value New element value
    */
   template <typename El_t,
             typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
@@ -121,6 +105,12 @@ public:
     _call_dependencies(element);
   }
 
+  /**
+   * @brief Calls an element non const method then calls callbacks & dependencies associated to this element
+   * @param element Element from which the method is called
+   * @param method Pointer to one of the element's method
+   * @param args Method arguments
+   */
   template <typename El_t, typename... Args_t,
             typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
   void call(El_t &element, void (El_t::*method)(Args_t...), const Args_t &... args)
@@ -130,6 +120,13 @@ public:
     _call_dependencies(element);
   }
 
+  /**
+   * @brief Calls an element non const method then calls callbacks & dependencies associated to this element
+   * @param element Element from which the method is called
+   * @param method Pointer to one of the element's method
+   * @param args Method arguments
+   * @return Return value of the method
+   */
   template <typename El_t, typename Ret_t, typename... Args_t,
             typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
   Ret_t call(El_t &element, Ret_t (El_t::*method)(Args_t...), const Args_t &... args)
