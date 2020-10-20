@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <typeinfo>
 
 /**
  * @brief Store an element memory address and type
