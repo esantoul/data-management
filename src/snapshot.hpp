@@ -70,7 +70,7 @@ public:
           ...)); // using fold expression & binary operators short-circuiting
   }
 
-  constexpr DataSignature get_data_signature() const noexcept
+  constexpr DataSignature get_data_sig() const noexcept
   {
     DataSignature ds{};
 #pragma GCC diagnostic push

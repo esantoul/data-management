@@ -148,7 +148,7 @@ public:
     mRedos.push(mUndos.top());
     if (mDirection == Direction::Forward && mUndos.size() > 1)
       mUndos.pop();
-    auto data_sig = mUndos.top().get_data_signature();
+    auto data_sig = mUndos.top().get_data_sig();
     mUndos.top().rollback();
     mUndos.pop();
 
@@ -168,7 +168,7 @@ public:
       return false;
 
     mUndos.push(mRedos.top());
-    auto data_sig = mRedos.top().get_data_signature();
+    auto data_sig = mRedos.top().get_data_sig();
     mRedos.top().rollback();
     mRedos.pop();
 
