@@ -1,3 +1,5 @@
+#pragma once
+
 #include <unordered_map>
 #include <stack>
 
@@ -115,7 +117,14 @@ public:
             typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
   void call(El_t &element, void (El_t::*method)(Args_t...), const Args_t &... args)
   {
+    mDirection = Direction::Forward;
+    if (!mUndos.size() || mUndos.top() != element)
+      mUndos.push(element);
+
     (element.*method)(args...);
+
+    mUndos.push(element);
+
     _callback(element);
     _call_dependencies(element);
   }
@@ -128,12 +137,21 @@ public:
    * @return Return value of the method
    */
   template <typename El_t, typename Ret_t, typename... Args_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
+            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>,
+            typename = std::enable_if_t<std::is_copy_constructible_v<Ret_t>>>
   Ret_t call(El_t &element, Ret_t (El_t::*method)(Args_t...), const Args_t &... args)
   {
+    mDirection = Direction::Forward;
+    if (!mUndos.size() || mUndos.top() != element)
+      mUndos.push(element);
+
     Ret_t result = (element.*method)(args...);
+
+    mUndos.push(element);
+
     _callback(element);
     _call_dependencies(element);
+
     return result;
   }
 

@@ -7,6 +7,8 @@ struct S
   int a = 0;
   int b = 0;
 
+  constexpr bool operator==(const S &other) { return a == other.a && b == other.b; }
+
   constexpr int addition_result() const { return a + b; }
   constexpr void vertical_symmetry() { a = -a; }
   constexpr float norm() const { return sqrt(a * a + b * b); }
