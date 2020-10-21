@@ -4,15 +4,15 @@
 #include <stack>
 
 #include "custom_type_utilities.hpp"
-#include "data_signature.hpp"
 #include "snapshot.hpp"
+#include "poly_fun.hpp"
+#include "signature.hpp"
 
-template <typename... Types>
 class ExternalManager
 {
 private:
-  using callback_map_t = std::unordered_multimap<DataSignature, void *>;
-  using dependency_map_t = std::unordered_multimap<DataSignature, DataSignature>;
+  using callback_map_t = std::unordered_multimap<Signature, PolyFun>;
+  using dependency_map_t = std::unordered_multimap<Signature, Signature>;
 
 public:
   using callback_iter_t = callback_map_t::iterator;
@@ -27,7 +27,7 @@ public:
   template <typename El_t>
   callback_iter_t register_callback(const El_t &element, void (*fun)(El_t))
   {
-    return mCallbacks.insert({element, reinterpret_cast<void *>(fun)});
+    return mCallbacks.insert({element, PolyFun::fmt<El_t>(fun)});
   }
 
   /**
@@ -186,30 +186,17 @@ public:
   }
 
 private:
-  std::function<void(const DataSignature &)> snap_callback = [&](const DataSignature &dat) { this->_callback(dat); this->_call_dependencies(dat); };
+  std::function<void(const Signature &)> snap_callback = [&](const Signature &dat) { this->_callback(dat); this->_call_dependencies(dat); };
 
-  template <typename El_t>
-  void _callback(const El_t &element) const
-  {
+  void _callback(const Signature &sig) const
+  {   
     // Call all callbacks directly linked to the element
-    auto range = mCallbacks.equal_range(element);
+    auto range = mCallbacks.equal_range(sig);
     for (auto start = range.first; start != range.second; ++start)
-      (*reinterpret_cast<void (*)(El_t)>((*start).second))(element);
+      sig.invoke(start->second);
   }
 
-  void _callback(const DataSignature &ds) const
-  {
-    (_try_callback<Types>(ds), ...);
-  }
-
-  template <typename T>
-  void _try_callback(const DataSignature &ds) const
-  {
-    if (typeid(T) == *ds.typeinfo)
-      _callback(*reinterpret_cast<const T *>(ds.address));
-  }
-
-  void _call_dependencies(const DataSignature &ds) const
+  void _call_dependencies(const Signature &ds) const
   {
     auto parents = mDependencies.equal_range(ds);
     for (auto start = parents.first; start != parents.second; ++start)

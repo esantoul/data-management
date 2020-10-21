@@ -5,7 +5,7 @@
 #include <functional>
 #include <vector>
 
-#include "data_signature.hpp"
+#include "signature.hpp"
 
 class SnapshotDataBase
 {
@@ -36,7 +36,7 @@ public:
            &element == address();
   }
 
-  virtual void rollback(std::function<void(const DataSignature &)> callback = nullptr) = 0;
+  virtual void rollback(std::function<void(const Signature &)> callback = nullptr) = 0;
 
 protected:
   virtual const std::type_info &type() const = 0;
@@ -59,7 +59,7 @@ public:
 
   SnapshotDataBase *clone() const override { return new SnapshotData(mData, pAddress); }
 
-  void rollback(std::function<void(const DataSignature &)> callback = nullptr) override
+  void rollback(std::function<void(const Signature &)> callback = nullptr) override
   {
     *pAddress = mData;
     if (callback)
@@ -146,7 +146,7 @@ public:
     return mData.get()->holds(element);
   }
 
-  void rollback(std::function<void(const DataSignature &)> callback = nullptr)
+  void rollback(std::function<void(const Signature &)> callback = nullptr)
   {
     if (!mData)
       return;
@@ -186,13 +186,13 @@ public:
     return &*(mSnapshots.cend() - 1);
   }
 
-  void rollback(std::function<void(const DataSignature &)> callback = nullptr)
+  void rollback(std::function<void(const Signature &)> callback = nullptr)
   {
     for (auto start = mSnapshots.rbegin(); start != mSnapshots.rend(); ++start)
       start->rollback(callback);
   }
 
-  void restore(std::function<void(const DataSignature &)> callback = nullptr)
+  void restore(std::function<void(const Signature &)> callback = nullptr)
   {
     for (auto start = mSnapshots.begin(); start != mSnapshots.end(); ++start)
       start->rollback(callback);
@@ -226,7 +226,7 @@ struct Hello
 
 struct Consumer
 {
-  void consume(const DataSignature &dat)
+  void consume(const Signature &dat)
   {
     printf("[%s]\n", dat.typeinfo->name());
   }
@@ -246,7 +246,7 @@ int main()
   Consumer c;
   i = j = f = 0;
   SnapshotGroup grp2{std::move(grp)};
-  grp2.rollback([&](const DataSignature &dat) { c.consume(dat); });
+  grp2.rollback([&](const Signature &dat) { c.consume(dat); });
   return i + j + f + grp.size() + grp2.size();
 }
 

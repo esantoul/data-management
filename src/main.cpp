@@ -11,8 +11,8 @@ struct S
 
   constexpr int addition_result() const { return a + b; }
   constexpr void vertical_symmetry() { a = -a; }
-  constexpr float norm() const { return sqrt(a * a + b * b); }
-  constexpr float enlarge(int length)
+  float norm() const { return sqrt(a * a + b * b); }
+  float enlarge(int length)
   {
     a += length;
     b += length;
@@ -38,8 +38,7 @@ void meeeeh(S elem)
 int main()
 {
   S s1;
-  ExternalManager<int, S> em;
-
+  ExternalManager em;
   auto cb_it = em.register_callback(s1.a, &isSetS1A);
   em.register_dependency(s1.a, s1);
   em.register_dependency(s1.b, s1);
