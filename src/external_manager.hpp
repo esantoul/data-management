@@ -5,7 +5,7 @@
 
 #include "custom_type_utilities.hpp"
 #include "data_signature.hpp"
-#include "snapshot_alt.hpp"
+#include "snapshot.hpp"
 
 template <typename... Types>
 class ExternalManager
