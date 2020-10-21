@@ -78,7 +78,10 @@ private:
     if constexpr (has_operator_equal_v<T>)
       return mData == *static_cast<const T *>(data_ptr);
     else
+    {
+      (void)data_ptr;
       return false;
+    }
   }
 
   const void *data() const override { return &mData; }
