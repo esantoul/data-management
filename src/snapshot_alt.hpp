@@ -120,11 +120,22 @@ public:
     return *mData.get() == other;
   }
 
+  template <typename T>
+  bool operator!=(const T &other) const
+  {
+    return !(*this == other);
+  }
+
   bool operator==(const Snapshot &other) const
   {
     if (!mData)
       return false;
     return *mData.get() == *other.mData.get();
+  }
+
+  bool operator!=(const Snapshot &other) const
+  {
+    return !(*this == other);
   }
 
   template <typename El_t>
@@ -149,6 +160,12 @@ private:
 class SnapshotGroup
 {
 public:
+  template <typename El_t>
+  bool operator==(const El_t &element) const { return last() && *last() == element; }
+
+  template <typename El_t>
+  bool operator!=(const El_t &element) const { return !last() || *last() != element; }
+
   std::size_t size() const { return mSnapshots.size(); }
 
   template <typename El_t>
