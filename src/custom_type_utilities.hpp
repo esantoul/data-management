@@ -58,3 +58,22 @@ struct get_type_index
 
 template <typename T, typename... Types>
 constexpr std::size_t get_type_index_v = get_type_index<T, Types...>::value;
+
+template <typename T, typename EqualTo>
+struct has_operator_equal_impl
+{
+  template <typename U, typename V>
+  static auto test(U *) -> decltype(std::declval<const U>() == std::declval<const V>());
+  template <typename, typename>
+  static auto test(...) -> std::false_type;
+
+  using type = typename std::is_same<bool, decltype(test<T, EqualTo>(0))>::type;
+};
+
+template <typename T, typename EqualTo = T>
+struct has_operator_equal : has_operator_equal_impl<T, EqualTo>::type
+{
+};
+
+template <typename T, typename EqualTo = T>
+constexpr bool has_operator_equal_v = has_operator_equal<T, EqualTo>::value;
