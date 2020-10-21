@@ -5,7 +5,7 @@
 
 #include "custom_type_utilities.hpp"
 #include "data_signature.hpp"
-#include "snapshot.hpp"
+#include "snapshot_alt.hpp"
 
 template <typename... Types>
 class ExternalManager
@@ -24,8 +24,7 @@ public:
    * @param fun Function to be called
    * @return Iterator to the registered callback
    */
-  template <typename El_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
+  template <typename El_t>
   callback_iter_t register_callback(const El_t &element, void (*fun)(El_t))
   {
     return mCallbacks.insert({element, reinterpret_cast<void *>(fun)});
@@ -35,8 +34,7 @@ public:
    * @brief Removes all callback associated with element
    * @param element Element associated to the callbacks to be removed
    */
-  template <typename El_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
+  template <typename El_t>
   void remove_callback(const El_t &element)
   {
     mCallbacks.erase(element);
@@ -57,10 +55,7 @@ public:
    * @param parent Element which callbacks will be triggered subsequently to child change
    * @return Iterator to the registered dependency
    */
-  template <typename Child_t,
-            typename Parent_t,
-            typename = std::enable_if_t<is_type_among_v<Child_t, Types...>>,
-            typename = std::enable_if_t<is_type_among_v<Parent_t, Types...>>>
+  template <typename Child_t, typename Parent_t>
   dependency_iter_t register_dependency(const Child_t &child, const Parent_t &parent)
   {
     return mDependencies.insert({child, parent});
@@ -70,8 +65,7 @@ public:
    * @brief Removes all dependencies associated with an element
    * @param element Element associated to the dependencies to be removed
    */
-  template <typename El_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
+  template <typename El_t>
   void remove_dependency(const El_t &element)
   {
     mDependencies.erase(element);
@@ -91,9 +85,8 @@ public:
    * @param element Element to be set
    * @param value New element value
    */
-  template <typename El_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
-  void set(El_t &element, const El_t &value)
+  template <typename El_t>
+  void set(El_t &element, const El_t &value, bool groupWithLast = false)
   {
     mDirection = Direction::Forward;
     if (!mUndos.size() || mUndos.top() != element)
@@ -101,7 +94,10 @@ public:
 
     element = value;
 
-    mUndos.push(element);
+    if (groupWithLast)
+      mUndos.top().add(element);
+    else
+      mUndos.push(element);
 
     _callback(element);
     _call_dependencies(element);
@@ -113,8 +109,7 @@ public:
    * @param method Pointer to one of the element's method
    * @param args Method arguments
    */
-  template <typename El_t, typename... Args_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
+  template <typename El_t, typename... Args_t>
   void call(El_t &element, void (El_t::*method)(Args_t...), const Args_t &... args)
   {
     mDirection = Direction::Forward;
@@ -137,7 +132,6 @@ public:
    * @return Return value of the method
    */
   template <typename El_t, typename Ret_t, typename... Args_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>,
             typename = std::enable_if_t<std::is_copy_constructible_v<Ret_t>>>
   Ret_t call(El_t &element, Ret_t (El_t::*method)(Args_t...), const Args_t &... args)
   {
@@ -166,12 +160,9 @@ public:
     mRedos.push(mUndos.top());
     if (mDirection == Direction::Forward && mUndos.size() > 1)
       mUndos.pop();
-    auto data_sig = mUndos.top().get_data_sig();
-    mUndos.top().rollback();
-    mUndos.pop();
 
-    _callback(data_sig);
-    _call_dependencies(data_sig);
+    mUndos.top().rollback(snap_callback);
+    mUndos.pop();
 
     mDirection = Direction::Backwards;
     return true;
@@ -186,20 +177,18 @@ public:
       return false;
 
     mUndos.push(mRedos.top());
-    auto data_sig = mRedos.top().get_data_sig();
-    mRedos.top().rollback();
-    mRedos.pop();
 
-    _callback(data_sig);
-    _call_dependencies(data_sig);
+    mRedos.top().restore(snap_callback);
+    mRedos.pop();
 
     mDirection = Direction::Forward;
     return true;
   }
 
 private:
-  template <typename El_t,
-            typename = std::enable_if_t<is_type_among_v<El_t, Types...>>>
+  std::function<void(const DataSignature &)> snap_callback = [&](const DataSignature &dat) { this->_callback(dat); this->_call_dependencies(dat); };
+
+  template <typename El_t>
   void _callback(const El_t &element) const
   {
     // Call all callbacks directly linked to the element
@@ -237,6 +226,6 @@ private:
 
   callback_map_t mCallbacks;
   dependency_map_t mDependencies; // Child key, Parent mapped
-  std::stack<Snapshot<Types...>> mUndos;
-  std::stack<Snapshot<Types...>> mRedos;
+  std::stack<SnapshotGroup> mUndos;
+  std::stack<SnapshotGroup> mRedos;
 };

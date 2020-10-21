@@ -160,6 +160,14 @@ private:
 class SnapshotGroup
 {
 public:
+  SnapshotGroup() = default;
+
+  template <typename... Els_t>
+  SnapshotGroup(Els_t &... elements)
+      : mSnapshots{elements...}
+  {
+  }
+
   template <typename El_t>
   bool operator==(const El_t &element) const { return last() && *last() == element; }
 
