@@ -1,3 +1,5 @@
+#pragma once
+
 #include <functional>
 #include <memory>
 #include <cassert>
@@ -6,10 +8,9 @@ class PolyFunDataBase
 {
 public:
   virtual ~PolyFunDataBase() {}
-
   virtual void operator()(const void *) const = 0;
-
   virtual const std::type_info &type() const = 0;
+  virtual PolyFunDataBase *clone() const = 0;
 
 protected:
 };
@@ -25,12 +26,14 @@ public:
 
   ~PolyFunData() {}
 
-  void operator()(const void *data_ptr) const
+  void operator()(const void *data_ptr) const override
   {
     mFun(*static_cast<const El_t *>(data_ptr));
   }
 
-  const std::type_info &type() const { return typeid(El_t); }
+  const std::type_info &type() const override { return typeid(El_t); }
+
+  PolyFunDataBase *clone() const override { return new PolyFunData{mFun}; }
 
 private:
   std::function<void(const El_t &)> mFun;
@@ -39,14 +42,20 @@ private:
 class PolyFun
 {
 public:
-  template <typename El_t>
+  template <typename El_t,
+            typename = std::enable_if_t<!std::is_same_v<El_t, PolyFun>>>
   PolyFun(const std::function<void(const El_t &)> &fun)
       : mFunData{new PolyFunData<El_t>(fun)}
   {
   }
 
+  PolyFun(const PolyFun &other)
+      : mFunData{other.mFunData->clone()}
+  {
+  }
+
   template <typename El_t>
-  void operator()(const El_t &data)
+  void operator()(const El_t &data) const
   {
     if (typeid(El_t) == mFunData->type())
       (*mFunData.get())(&data);
