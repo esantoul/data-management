@@ -24,16 +24,18 @@ INCLUDE  := -Iinclude/
 #    @mkdir -p $(@D)
 #    $(CXX) $(CXXFLAGS) -o $(APP_DIR)/$(TARGET) $^ $(LDFLAGS)
 
-example-snapshot:
+example:
 	@mkdir -p $(APP_DIR)/examples
-	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/examples/snapshot $(INCLUDE) $(LDFLAGS) examples/snapshot_example.cpp
+	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/examples/$(EX).out $(INCLUDE) $(LDFLAGS) examples/$(EX)_example.cpp
 
-example-static_mgr:
-	@mkdir -p $(APP_DIR)/examples
-	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/examples/static_mgr $(INCLUDE) $(LDFLAGS) examples/static_mgr_example.cpp
+example-snapshot: EX := snapshot
+example-snapshot: example
 
-.PHONY:build clean example-snapshot\
-	all debug release
+example-static_mgr: EX := static_mgr
+example-static_mgr: example
+
+.PHONY:build clean example example-snapshot example-static_mgr\
+	# all debug release
 
 build:
 	@mkdir -p $(APP_DIR)
@@ -46,5 +48,4 @@ build:
 # release: all
 
 clean:
-	-@rm -rvf $(OBJ_DIR)/*
-	-@rm -rvf $(APP_DIR)/*
+	-@rm -rvf $(BUILD)
