@@ -1,3 +1,13 @@
+/**
+ * Copyright (C) 2020 Etienne Santoul - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the BSD 2-Clause License
+ *
+ * You should have received a copy of the BSD 2-Clause License
+ * with this file. If not, please visit: 
+ * https://github.com/esantoul/data-management
+ */
+
 #pragma once
 
 #include <unordered_map>
