@@ -1,6 +1,6 @@
 #include <cstdio>
 #include <cmath>
-#include "external_manager.hpp"
+#include "static_data_manager.hpp"
 
 struct S
 {
@@ -38,7 +38,7 @@ void meeeeh(S elem)
 int main()
 {
   S s1;
-  ExternalManager em;
+  dmgmt::StaticDataManager em;
   auto cb_it = em.register_callback(s1.a, &isSetS1A);
   em.register_dependency(s1.a, s1);
   em.register_dependency(s1.b, s1);
