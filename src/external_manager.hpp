@@ -89,6 +89,7 @@ public:
   void set(El_t &element, const El_t &value, bool groupWithLast = false)
   {
     mDirection = Direction::Forward;
+    clear_redos();
     if (!mUndos.size() || mUndos.top() != element)
       mUndos.push(element);
 
@@ -113,6 +114,7 @@ public:
   void call(El_t &element, void (El_t::*method)(Args_t...), const Args_t &... args)
   {
     mDirection = Direction::Forward;
+    clear_redos();
     if (!mUndos.size() || mUndos.top() != element)
       mUndos.push(element);
 
@@ -136,6 +138,7 @@ public:
   Ret_t call(El_t &element, Ret_t (El_t::*method)(Args_t...), const Args_t &... args)
   {
     mDirection = Direction::Forward;
+    clear_redos();
     if (!mUndos.size() || mUndos.top() != element)
       mUndos.push(element);
 
@@ -186,10 +189,11 @@ public:
   }
 
 private:
-  std::function<void(const Signature &)> snap_callback = [&](const Signature &dat) { this->_callback(dat); this->_call_dependencies(dat); };
+  std::function<void(const Signature &)> snap_callback =
+      [&](const Signature &dat) { this->_callback(dat); this->_call_dependencies(dat); };
 
   void _callback(const Signature &sig) const
-  {   
+  {
     // Call all callbacks directly linked to the element
     auto range = mCallbacks.equal_range(sig);
     for (auto start = range.first; start != range.second; ++start)
@@ -201,6 +205,12 @@ private:
     auto parents = mDependencies.equal_range(ds);
     for (auto start = parents.first; start != parents.second; ++start)
       _callback(start->second);
+  }
+
+  void clear_redos()
+  {
+    while (mRedos.size())
+      mRedos.pop();
   }
 
   enum class Direction
