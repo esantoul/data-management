@@ -20,6 +20,10 @@
 
 namespace dmgmt
 {
+  /**
+   * @brief An object that allows management of static, lifetime controlled data.
+   * Allows callbacks & dependencies registration as well as undo/redo management.
+   */
   class StaticDataManager
   {
   private:
@@ -31,11 +35,11 @@ namespace dmgmt
     using dependency_iter_t = dependency_map_t::iterator;
 
     /**
-   * @brief Registers a callback that will be called on every element change via StaticDataManager 'set' or 'call' methods calls
-   * @param element Element linked to the callback
-   * @param fun Function to be called
-   * @return Iterator to the registered callback
-   */
+     * @brief Registers a callback that will be called on every element change via StaticDataManager set/call methods calls
+     * @param element Element linked to the callback
+     * @param fun Function to be called
+     * @return Iterator to the registered callback
+     */
     template <typename El_t, typename Functor_t>
     callback_iter_t register_callback(const El_t &element, const Functor_t &functor)
     {
@@ -43,9 +47,9 @@ namespace dmgmt
     }
 
     /**
-   * @brief Removes all callback associated with element
-   * @param element Element associated to the callbacks to be removed
-   */
+     * @brief Removes all callback associated with an element
+     * @param element Element associated to the callbacks to be removed
+     */
     template <typename El_t>
     void remove_callback(const El_t &element)
     {
@@ -53,20 +57,21 @@ namespace dmgmt
     }
 
     /**
-   * @brief Removes a callback
-   * @param iterator Callback iterator
-   */
+     * @brief Removes a callback
+     * @param iterator Callback iterator
+     */
     void remove_callback(const callback_iter_t &iterator)
     {
       mCallbacks.erase(iterator);
     }
 
     /**
-   * @brief Registers a dependency between two elements. Every child element change via 'set' or 'call' methods will trigger parent element callbacks.
-   * @param child Trigger element
-   * @param parent Element which callbacks will be triggered subsequently to child change
-   * @return Iterator to the registered dependency
-   */
+     * @brief Registers a dependency between two elements.
+     * Every child element change via 'set' or 'call' methods will trigger parent element callbacks recursively.
+     * @param child Trigger element
+     * @param parent Element which callbacks will be triggered subsequently to child change
+     * @return Iterator to the registered dependency
+     */
     template <typename Child_t, typename Parent_t>
     dependency_iter_t register_dependency(const Child_t &child, const Parent_t &parent)
     {
@@ -74,9 +79,9 @@ namespace dmgmt
     }
 
     /**
-   * @brief Removes all dependencies associated with an element
-   * @param element Element associated to the dependencies to be removed
-   */
+     * @brief Removes all dependencies associated with an element
+     * @param element Element associated to the dependencies to be removed
+     */
     template <typename El_t>
     void remove_dependency(const El_t &element)
     {
@@ -84,19 +89,20 @@ namespace dmgmt
     }
 
     /**
-   * @brief Removes a dependency
-   * @param iterator Dependency iterator
-   */
+     * @brief Removes a dependency
+     * @param iterator Dependency iterator
+     */
     void remove_dependency(const dependency_iter_t &iterator)
     {
       mDependencies.erase(iterator);
     }
 
     /**
-   * @brief Set an element to a given value then calls callbacks & dependencies associated to this element
-   * @param element Element to be set
-   * @param value New element value
-   */
+     * @brief Sets an element to a given value then calls callbacks & dependencies associated to this element
+     * @param element Element to be set
+     * @param value New element value
+     * @param groupWithLast set to true if this change needs to be grouped with the previous one in terms of undo/redo
+     */
     template <typename El_t>
     void set(El_t &element, const El_t &value, bool groupWithLast = false)
     {
@@ -117,11 +123,11 @@ namespace dmgmt
     }
 
     /**
-   * @brief Calls an element non const method then calls callbacks & dependencies associated to this element
-   * @param element Element from which the method is called
-   * @param method Pointer to one of the element's method
-   * @param args Method arguments
-   */
+     * @brief Calls an element non const method then calls callbacks & dependencies associated to this element
+     * @param element Element from which the method is called
+     * @param method Pointer to one of the element's method
+     * @param args Method arguments
+     */
     template <typename El_t, typename... Args_t>
     void call(El_t &element, void (El_t::*method)(Args_t...), const Args_t &... args)
     {
@@ -139,12 +145,12 @@ namespace dmgmt
     }
 
     /**
-   * @brief Calls an element non const method then calls callbacks & dependencies associated to this element
-   * @param element Element from which the method is called
-   * @param method Pointer to one of the element's method
-   * @param args Method arguments
-   * @return Return value of the method
-   */
+     * @brief Calls an element non const method then calls callbacks & dependencies associated to this element
+     * @param element Element from which the method is called
+     * @param method Pointer to one of the element's method
+     * @param args Method arguments
+     * @return Return value of the method
+     */
     template <typename El_t, typename Ret_t, typename... Args_t,
               typename = std::enable_if_t<std::is_copy_constructible_v<Ret_t>>>
     Ret_t call(El_t &element, Ret_t (El_t::*method)(Args_t...), const Args_t &... args)
@@ -165,8 +171,8 @@ namespace dmgmt
     }
 
     /**
-   * @brief Undoes last change, calls all appropriate callbacks & dependencies
-   */
+     * @brief Undoes last change, calls all appropriate callbacks & dependencies
+     */
     bool undo()
     {
       if (mUndos.size() == 0)
@@ -184,8 +190,8 @@ namespace dmgmt
     }
 
     /**
-   * @brief Redoes last change, calls all appropriate callbacks & dependencies
-   */
+     * @brief Redoes last change, calls all appropriate callbacks & dependencies
+     */
     bool redo()
     {
       if (mRedos.size() == 0)

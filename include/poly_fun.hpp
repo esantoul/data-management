@@ -51,6 +51,10 @@ namespace dmgmt
     std::function<void(const El_t &)> mFun;
   };
 
+  /**
+   * @brief An object that contains a polymorphic callable.
+   * Can contain any callable with signature void(El_t) where El_t is any type.
+   */
   class PolyFun
   {
   public:

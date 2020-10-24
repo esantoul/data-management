@@ -45,6 +45,9 @@ namespace dmgmt
     const T *pData;
   };
 
+  /**
+   * @brief An object that can store any variable signature (address & type)
+   */
   class Signature
   {
   public:

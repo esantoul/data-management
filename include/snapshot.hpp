@@ -106,6 +106,10 @@ namespace dmgmt
     T *pAddress;
   };
 
+  /** 
+   * @brief An object that stores a variable signature and its value at the time of creation of the Snapshot
+   * Useful to rollback the stored variable to its value at the creation of the Snapshot
+   */
   class Snapshot
   {
   public:
@@ -173,6 +177,9 @@ namespace dmgmt
     std::unique_ptr<SnapshotDataBase> mData;
   };
 
+  /**
+   * @brief An object containing a vector of Snapshots
+   */
   class SnapshotGroup
   {
   public:
