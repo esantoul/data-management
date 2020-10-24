@@ -45,7 +45,7 @@ int main()
   smgr.set(smgr.get().b, -5);
 
   smgr.register_callback(
-      smgr.get().a, +[](int a) { printf("a: %d\n", a); });
+      smgr.get().a, [](int val) { printf("a: %d\n", val); });
   smgr.set(smgr.get().a, 10);
 
   smgr.register_dependency(smgr.get().a, smgr.get());

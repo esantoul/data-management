@@ -40,11 +40,11 @@ namespace dmgmt
       mManager.remove_dependency(iterator);
     }
 
-    template <typename El_t>
-    StaticDataManager::callback_iter_t register_callback(const El_t &element, void (*callback)(El_t))
+    template <typename El_t, typename Functor_t>
+    StaticDataManager::callback_iter_t register_callback(const El_t &element, const Functor_t &functor)
     {
       assert("element cannot be accessed by DataManager!!" && isValidMemory(element));
-      return mManager.register_callback(element, callback);
+      return mManager.register_callback(element, functor);
     }
 
     template <typename El_t>

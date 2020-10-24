@@ -36,10 +36,10 @@ namespace dmgmt
    * @param fun Function to be called
    * @return Iterator to the registered callback
    */
-    template <typename El_t>
-    callback_iter_t register_callback(const El_t &element, void (*fun)(El_t))
+    template <typename El_t, typename Functor_t>
+    callback_iter_t register_callback(const El_t &element, const Functor_t &functor)
     {
-      return mCallbacks.insert({element, PolyFun::fmt<El_t>(fun)});
+      return mCallbacks.insert({element, PolyFun::fmt<El_t>(functor)});
     }
 
     /**
@@ -54,11 +54,11 @@ namespace dmgmt
 
     /**
    * @brief Removes a callback
-   * @param position Callback iterator
+   * @param iterator Callback iterator
    */
-    void remove_callback(const callback_iter_t &position)
+    void remove_callback(const callback_iter_t &iterator)
     {
-      mCallbacks.erase(position);
+      mCallbacks.erase(iterator);
     }
 
     /**
@@ -85,11 +85,11 @@ namespace dmgmt
 
     /**
    * @brief Removes a dependency
-   * @param it Dependency iterator
+   * @param iterator Dependency iterator
    */
-    void remove_dependency(const dependency_iter_t &it)
+    void remove_dependency(const dependency_iter_t &iterator)
     {
-      mDependencies.erase(it);
+      mDependencies.erase(iterator);
     }
 
     /**
