@@ -34,6 +34,9 @@ example-snapshot: example
 example-static_mgr: EX := static_mgr
 example-static_mgr: example
 
+example-data_mgr: EX := data_mgr
+example-data_mgr: example
+
 .PHONY:build clean example example-snapshot example-static_mgr\
 	# all debug release
 
