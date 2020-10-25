@@ -85,7 +85,7 @@ int main()
   float val = em.call(s1, &S::enlarge, arg);
 
   em.register_dependency(s1, s1.b); // To test circular dependency check
-  em.set(s1.b, 10);
+  em.set(s1.b, 18);
 
   return val;
 }

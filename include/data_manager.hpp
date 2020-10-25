@@ -30,40 +30,6 @@ namespace dmgmt
     const Data_t &get() { return mData; }
 
     /**
-   * @brief Registers a dependency between two elements.
-   * Every child element change via 'set' or 'call' methods will trigger parent element callbacks recursively.
-   * @param child Trigger element
-   * @param parent Element which callbacks will be triggered subsequently to child change
-   * @return Iterator to the registered dependency
-   */
-    template <typename Child_t, typename Parent_t>
-    StaticDataManager::dependency_iter_t register_dependency(const Child_t &child, const Parent_t &parent)
-    {
-      assert("child cannot be accessed by DataManager!!" && isValidMemory(child));
-      assert("parent cannot be accessed by DataManager!!" && isValidMemory(parent));
-      return mManager.register_dependency(child, parent);
-    }
-
-    /**
-   * @brief Removes all dependencies associated with an element
-   * @param element Element associated to the dependencies to be removed
-   */
-    template <typename El_t>
-    void remove_dependency(const El_t &element)
-    {
-      mManager.remove_dependency(element);
-    }
-
-    /**
-   * @brief Removes a dependency
-   * @param iterator Dependency iterator
-   */
-    void remove_dependency(StaticDataManager::dependency_iter_t iterator)
-    {
-      mManager.remove_dependency(iterator);
-    }
-
-    /**
      * @brief Registers a callback that will be called on every element change via DataManager set/call methods calls
      * @param element Element linked to the callback
      * @param fun Function to be called
@@ -93,6 +59,40 @@ namespace dmgmt
     void remove_callback(StaticDataManager::callback_iter_t iterator)
     {
       mManager.remove_callback(iterator);
+    }
+
+    /**
+     * @brief Registers a dependency between two elements.
+     * Every child element change via 'set' or 'call' methods will trigger parent element callbacks recursively.
+     * @param child Trigger element
+     * @param parent Element which callbacks will be triggered subsequently to child change
+     * @return Iterator to the registered dependency
+     */
+    template <typename Child_t, typename Parent_t>
+    StaticDataManager::dependency_iter_t register_dependency(const Child_t &child, const Parent_t &parent)
+    {
+      assert("child cannot be accessed by DataManager!!" && isValidMemory(child));
+      assert("parent cannot be accessed by DataManager!!" && isValidMemory(parent));
+      return mManager.register_dependency(child, parent);
+    }
+
+    /**
+     * @brief Removes all dependencies associated with an element
+     * @param element Element associated to the dependencies to be removed
+     */
+    template <typename El_t>
+    void remove_dependency(const El_t &element)
+    {
+      mManager.remove_dependency(element);
+    }
+
+    /**
+     * @brief Removes a dependency
+     * @param iterator Dependency iterator
+     */
+    void remove_dependency(StaticDataManager::dependency_iter_t iterator)
+    {
+      mManager.remove_dependency(iterator);
     }
 
     /**

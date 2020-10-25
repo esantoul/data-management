@@ -68,15 +68,19 @@ namespace dmgmt
 
     /**
      * @brief Registers a dependency between two elements.
-     * Every child element change via 'set' or 'call' methods will trigger parent element callbacks recursively.
-     * @param child Trigger element
-     * @param parent Element which callbacks will be triggered subsequently to child change
+     * Every source element change via set/call methods will trigger destination element callbacks recursively.
+     * @param source Source element
+     * @param destination Element which callbacks will be triggered subsequently to child change
      * @return Iterator to the registered dependency
      */
-    template <typename Child_t, typename Parent_t>
-    dependency_iter_t register_dependency(const Child_t &child, const Parent_t &parent)
+    template <typename Source_t, typename Destination_t>
+    dependency_iter_t register_dependency(const Source_t &source, const Destination_t &destination)
     {
-      return mDependencies.insert({child, parent});
+      auto dependencies = mDependencies.equal_range(source);
+      for (auto start = dependencies.first; start != dependencies.second; ++start)
+        if (start->second == destination)
+          return start;
+      return mDependencies.insert({source, destination});
     }
 
     /**
@@ -214,19 +218,19 @@ namespace dmgmt
         sig.invoke(start->second);
     }
 
-    void _find_next(const Signature &ds)
+    void _find_next(const Signature &sig)
     {
-      mToClear.insert(ds);
-      auto parents = mDependencies.equal_range(ds);
-      for (auto start = parents.first; start != parents.second; ++start)
+      mToClear.insert(sig);
+      auto dependants = mDependencies.equal_range(sig);
+      for (auto start = dependants.first; start != dependants.second; ++start)
         if (mVisited.find(start->second) == mVisited.end())
           mToVisit.insert(start->second);
     }
 
-    void _update(const Signature &ds)
+    void _update(const Signature &sig)
     {
-      mToVisit.insert(ds);
-      while (mToVisit.size())
+      mToVisit.insert(sig);
+      while (mToVisit.size()) // Breath first search
       {
         for (const auto &el : mToVisit)
           _callback(el);
@@ -254,9 +258,10 @@ namespace dmgmt
     Direction mDirection;
 
     callback_map_t mCallbacks;
-    dependency_map_t mDependencies; // Child key, Parent mapped
+    dependency_map_t mDependencies; // Source key, destination mapped
     std::stack<SnapshotGroup> mUndos;
     std::stack<SnapshotGroup> mRedos;
+
     std::unordered_set<Signature> mToVisit;
     std::unordered_set<Signature> mVisited;
     std::unordered_set<Signature> mToClear;

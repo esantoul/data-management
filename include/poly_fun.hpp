@@ -79,10 +79,16 @@ namespace dmgmt
         assert(false);
     }
 
+    /**
+     * @brief Formats any functor to a type handlable by PolyFun
+     * @tparam Dat_t Type of the argument handled by the functor
+     * @param functor a functor with void(const Dat_t&) signature
+     * @return Functor properly converted to type std::function<void(const Dat_t&)>
+     */
     template <typename Dat_t, typename Functor_t>
-    static std::function<void(const Dat_t &)> fmt(const Functor_t &f)
+    static std::function<void(const Dat_t &)> fmt(const Functor_t &functor)
     {
-      return {f};
+      return functor;
     }
 
   private:
