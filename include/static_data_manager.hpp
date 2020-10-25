@@ -220,7 +220,7 @@ namespace dmgmt
 
     void _find_next(const Signature &sig)
     {
-      mToClear.insert(sig);
+      mToErase.insert(sig);
       auto dependants = mDependencies.equal_range(sig);
       for (auto start = dependants.first; start != dependants.second; ++start)
         if (mVisited.find(start->second) == mVisited.end())
@@ -236,9 +236,9 @@ namespace dmgmt
           _callback(el);
         for (const auto &el : mToVisit)
           _find_next(el);
-        for (const auto &el : mToClear)
+        for (const auto &el : mToErase)
           mToVisit.erase(el);
-        mToClear.clear();
+        mToErase.clear();
       }
       mVisited.clear();
     }
@@ -264,6 +264,6 @@ namespace dmgmt
 
     std::unordered_set<Signature> mToVisit;
     std::unordered_set<Signature> mVisited;
-    std::unordered_set<Signature> mToClear;
+    std::unordered_set<Signature> mToErase;
   };
 } // namespace dmgmt

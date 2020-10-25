@@ -51,6 +51,7 @@ int main()
   dmgmt::StaticDataManager em;
   auto cb_it = em.register_callback(s1.a, &isSetS1A);
   em.register_dependency(s1.a, s1);
+  em.register_dependency(s1.a, s1); // duplicated dependency test
   em.register_dependency(s1.b, s1);
 
   em.set(s1.a, 10);
