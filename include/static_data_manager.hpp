@@ -11,6 +11,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 #include <stack>
 
 #include "custom_type_utilities.hpp"
@@ -118,8 +119,7 @@ namespace dmgmt
       else
         mUndos.push(element);
 
-      _callback(element);
-      _call_dependencies(element);
+      _update(element);
     }
 
     /**
@@ -140,8 +140,7 @@ namespace dmgmt
 
       mUndos.push(element);
 
-      _callback(element);
-      _call_dependencies(element);
+      _update(element);
     }
 
     /**
@@ -164,8 +163,7 @@ namespace dmgmt
 
       mUndos.push(element);
 
-      _callback(element);
-      _call_dependencies(element);
+      _update(element);
 
       return result;
     }
@@ -182,7 +180,7 @@ namespace dmgmt
       if (mDirection == Direction::Forward && mUndos.size() > 1)
         mUndos.pop();
 
-      mUndos.top().rollback(snap_callback);
+      mUndos.top().rollback([&](const Signature &ds) { this->_update(ds); });
       mUndos.pop();
 
       mDirection = Direction::Backwards;
@@ -199,7 +197,7 @@ namespace dmgmt
 
       mUndos.push(mRedos.top());
 
-      mRedos.top().restore(snap_callback);
+      mRedos.top().restore([&](const Signature &ds) { this->_update(ds); });
       mRedos.pop();
 
       mDirection = Direction::Forward;
@@ -207,22 +205,38 @@ namespace dmgmt
     }
 
   private:
-    std::function<void(const Signature &)> snap_callback =
-        [&](const Signature &dat) { this->_callback(dat); this->_call_dependencies(dat); };
-
-    void _callback(const Signature &sig) const
+    void _callback(const Signature &sig)
     {
       // Call all callbacks directly linked to the element
+      mVisited.insert(sig);
       auto range = mCallbacks.equal_range(sig);
       for (auto start = range.first; start != range.second; ++start)
         sig.invoke(start->second);
     }
 
-    void _call_dependencies(const Signature &ds) const
+    void _find_next(const Signature &ds)
     {
+      mToClear.insert(ds);
       auto parents = mDependencies.equal_range(ds);
       for (auto start = parents.first; start != parents.second; ++start)
-        _callback(start->second);
+        if (mVisited.find(start->second) == mVisited.end())
+          mToVisit.insert(start->second);
+    }
+
+    void _update(const Signature &ds)
+    {
+      mToVisit.insert(ds);
+      while (mToVisit.size())
+      {
+        for (const auto &el : mToVisit)
+          _callback(el);
+        for (const auto &el : mToVisit)
+          _find_next(el);
+        for (const auto &el : mToClear)
+          mToVisit.erase(el);
+        mToClear.clear();
+      }
+      mVisited.clear();
     }
 
     void clear_redos()
@@ -243,5 +257,8 @@ namespace dmgmt
     dependency_map_t mDependencies; // Child key, Parent mapped
     std::stack<SnapshotGroup> mUndos;
     std::stack<SnapshotGroup> mRedos;
+    std::unordered_set<Signature> mToVisit;
+    std::unordered_set<Signature> mVisited;
+    std::unordered_set<Signature> mToClear;
   };
 } // namespace dmgmt
