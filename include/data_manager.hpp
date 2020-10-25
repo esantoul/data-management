@@ -137,15 +137,20 @@ namespace dmgmt
 
     /**
      * @brief Undoes last change, calls all appropriate callbacks & dependencies
+     * @return true if undo was done else false
      */
-    void undo() { mManager.undo(); }
+    bool undo() { return mManager.undo(); }
 
     /**
      * @brief Redoes last change, calls all appropriate callbacks & dependencies
+     * @return true if redo was done else false
      */
-    void redo() { mManager.redo(); }
+    bool redo() { return mManager.redo(); }
 
   private:
+    /**
+     * @brief Check whether an element belongs to the stored data structure
+     */
     template <typename El_t>
     bool isValidMemory(const El_t &element)
     {

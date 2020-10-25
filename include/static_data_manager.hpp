@@ -48,7 +48,7 @@ namespace dmgmt
     }
 
     /**
-     * @brief Removes all callback associated with an element
+     * @brief Removes all callbacks associated with an element
      * @param element Element associated to the callbacks to be removed
      */
     template <typename El_t>
@@ -76,10 +76,12 @@ namespace dmgmt
     template <typename Source_t, typename Destination_t>
     dependency_iter_t register_dependency(const Source_t &source, const Destination_t &destination)
     {
+      // First check whether the {source, destination} pair already exists
       auto dependencies = mDependencies.equal_range(source);
       for (auto start = dependencies.first; start != dependencies.second; ++start)
         if (start->second == destination)
           return start;
+      // If not register this new dependency
       return mDependencies.insert({source, destination});
     }
 
@@ -174,6 +176,7 @@ namespace dmgmt
 
     /**
      * @brief Undoes last change, calls all appropriate callbacks & dependencies
+     * @return true if undo was done else false
      */
     bool undo()
     {
@@ -193,6 +196,7 @@ namespace dmgmt
 
     /**
      * @brief Redoes last change, calls all appropriate callbacks & dependencies
+     * @return true if redo was done else false
      */
     bool redo()
     {
@@ -209,15 +213,20 @@ namespace dmgmt
     }
 
   private:
+    /**
+     * @brief Calls all callbacks directly linked to the element
+     */
     void _callback(const Signature &sig)
     {
-      // Call all callbacks directly linked to the element
       mVisited.insert(sig);
       auto range = mCallbacks.equal_range(sig);
       for (auto start = range.first; start != range.second; ++start)
         sig.invoke(start->second);
     }
 
+    /**
+     * @brief Finds all elements that depend of a source element and adds them to the elements to visit
+     */
     void _find_next(const Signature &sig)
     {
       mToErase.insert(sig);
@@ -227,6 +236,10 @@ namespace dmgmt
           mToVisit.insert(start->second);
     }
 
+    /**
+     * @brief Calls alls callbacks linked to an element and its dependants recursively.
+     * Dependants are reached via a breath first search.
+     */
     void _update(const Signature &sig)
     {
       mToVisit.insert(sig);
@@ -249,6 +262,9 @@ namespace dmgmt
         mRedos.pop();
     }
 
+    /**
+     * @brief Signals whether last modification was done in direction of the past (Backwards) or the future (Forward).
+     */
     enum class Direction
     {
       Forward,
